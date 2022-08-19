@@ -72,7 +72,10 @@ async def run():
         webserver = PicoWebServer.WebServer()
         
         def getIndex(req,res):
-            res['send']("index")
+            f = open('html/index.html')
+            text = f.read()
+            f.close()
+            res['send'](text.replace("[[requests]]", str(webserver.info()['totalRequests'])))
         
         def getTest(req,res):
             res['send']("test")
@@ -87,4 +90,5 @@ async def main():
     await a.gather(*tasks)
     
 a.run(main())
+
 ```
