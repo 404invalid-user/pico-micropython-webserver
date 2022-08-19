@@ -19,6 +19,7 @@ import gc
 from lib import PicoWebServer
 
 
+
 # get config
 def LoadConfig(file):
     f = open(file)
@@ -36,9 +37,11 @@ lock = a.Lock()
 # pwd - password
 # attempts - how many time will we try to connect to WiFi in one cycle
 # delay_in_msec - delay duration between attempts
-async def wifi_connect(SSID: str, pwd: str, attempts: int = 3, delay_in_msec: int = 200) -> network.WLAN:
+async def wifi_connect(hostname: str, SSID: str, pwd: str, attempts: int = 3, delay_in_msec: int = 200) -> network.WLAN:
     wifi = net.WLAN(net.STA_IF)
-    wifi.active(1)
+    wifi.active(True)
+    #not working no clue why
+    #wifi.config(dhcp_hostname = "PI-Pico")
     count = 1
     while not wifi.isconnected() and count <= attempts:
         print("WiFi connecting. Attempt {}.".format(count))
@@ -57,12 +60,12 @@ async def run():
     global config
     global lock
 
-    wifi = await wifi_connect(config["wifi"]["SSID"], config["wifi"]["password"])
+    wifi = await wifi_connect("PI-Pico", config["wifi"]["SSID"], config["wifi"]["password"])
     #retyrn wifi if not connected
     while True:
         gc.collect()
         if not wifi.isconnected():
-            wifi = await wifi_connect(config["wifi"]["SSID"], config["wifi"]["password"])
+            wifi = await wifi_connect("PI-Pico", config["wifi"]["SSID"], config["wifi"]["password"])
             if not wifi.isconnected():
                 continue
         
