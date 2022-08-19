@@ -6,27 +6,36 @@ from machine import Pin
 
 
 def CleanRequest(req):
-    sep = req.replace("\r\n"," ").split(" ")
+    sep = req.replace("\r\n"," ").replace("\\r\\n"," ").split(" ")
 
     extras = []
+    last_extra = 0
     for x in range(len(sep)):
-        if ":" in sep[x]:
-            extras.append({sep[x].replace(":", ""): sep[x+1]})
+        if ":" in sep[x] and sep[x].find("://") == -1:
+            try:
+                extras.append({sep[x].replace(":", ""): sep[x+1]})
+                last_extra = x+1
+            except:
+                print()
+                
+    post_data = sep[last_extra+1:]
+    post_data = " ".join(post_data).replace(' ', '').replace("'","")
 
     if "?" in sep[1]:
         return {
         "method": sep[0].replace("b'", ""),
         "route": sep[1].split('?')[0],
         "params": "?"+sep[1].split('?')[1],
-        "extras":extras
-        }
+        "extras":extras,
+        "post_data": post_data}
     else:
         return {
         "method": sep[0].replace("b'", ""),
         "route": sep[1].split('?')[0],
         "params": "",
-        "extras":extras
-        }
+        "extras":extras,
+        "post_data":post_data}
+
 
 class WebServer:
         
@@ -73,10 +82,11 @@ class WebServer:
                 cl, addr = self.socket.accept()
                 print('client connected from', addr)
                 request = cl.recv(1024)
-                print(str(request))
                 
                 request = str(request)
                 clean_request = CleanRequest(request)
+                
+                print(str(clean_request))
                 
                 def SendHTML(data):
                     cl.send('HTTP/1.0 200 OK\r\nContent-type: text/html\r\n\r\n')
