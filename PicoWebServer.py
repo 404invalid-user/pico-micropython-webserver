@@ -57,6 +57,10 @@ def FlashLed():
 
 
 class WebServer:
+    def __init__(self):
+        self.total_requests = 0
+        self.post_requests = 0
+        self.get_requests = 0
         
     #call back function for get requests
     get_callbacks = None    
@@ -81,10 +85,8 @@ class WebServer:
             self.post_callbacks[event_name].append(callback)
             
     
-    def trigger(self, EHname,txt):
-        if self.callbacks is not None and EHname in self.callbacks:
-            for callback in self.callbacks[EHname]:
-                callback(txt)
+    def info(self):
+        return {"getRequests": self.get_requests, "totalRequests": self.total_requests, "PostRequests": self.post_requests}
                 
     def listen(self, port, host):
         host_name = "0.0.0.0"
@@ -101,6 +103,7 @@ class WebServer:
                 cl, addr = self.socket.accept()
                 print('client connected from', addr)
                 FlashLed()
+                self.total_requests += 1
                 request = cl.recv(1024)
                 
                 request = str(request)
@@ -122,8 +125,16 @@ class WebServer:
                 #handle get requests
                 
                 if clean_request['method'] == "GET":
+                    self.get_requests += 1
                     if self.get_callbacks is not None and clean_request['route'] in self.get_callbacks:
                         for callback in self.get_callbacks[clean_request['route']]:
+                            callback({}, {'send': SendHTML, 'json': SendJson})
+                    
+                #handle post requests
+                elif clean_request['method'] == "POST":
+                    self.post_requests += 1
+                    if self.post_callbacks is not None and clean_request['route'] in self.post_callbacks:
+                        for callback in self.post_callbacks[clean_request['route']]:
                             callback({}, {'send': SendHTML, 'json': SendJson})
                 
                 
