@@ -20,21 +20,40 @@ def CleanRequest(req):
                 
     post_data = sep[last_extra+1:]
     post_data = " ".join(post_data).replace(' ', '').replace("'","")
+    
+    try:
+        if "?" in sep[1]:
+            return {
+                "method": sep[0].replace("b'", ""),
+                "route": sep[1].split('?')[0],
+                "params": "?"+sep[1].split('?')[1],
+                "extras":extras,
+                "post_data": post_data}
+        else:
+            return {
+                "method": sep[0].replace("b'", ""),
+                "route": sep[1].split('?')[0],
+                "params": "",
+                "extras":extras,
+                "post_data":post_data}
+    except:
+        #hmmm
+        return {
+                "method": "GET",
+                "route": "/",
+                "params": "",
+                "extras":{},
+                "post_data":""}
 
-    if "?" in sep[1]:
-        return {
-        "method": sep[0].replace("b'", ""),
-        "route": sep[1].split('?')[0],
-        "params": "?"+sep[1].split('?')[1],
-        "extras":extras,
-        "post_data": post_data}
-    else:
-        return {
-        "method": sep[0].replace("b'", ""),
-        "route": sep[1].split('?')[0],
-        "params": "",
-        "extras":extras,
-        "post_data":post_data}
+led = Pin("LED", Pin.OUT)
+led.value(0)
+
+def FlashLed():
+    global led
+    led.value(1)
+    time.sleep(0.02)
+    led.value(0)
+    
 
 
 class WebServer:
@@ -81,6 +100,7 @@ class WebServer:
             try:
                 cl, addr = self.socket.accept()
                 print('client connected from', addr)
+                FlashLed()
                 request = cl.recv(1024)
                 
                 request = str(request)
