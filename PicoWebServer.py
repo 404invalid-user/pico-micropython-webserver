@@ -1,49 +1,53 @@
 import network
 import socket
 import time
+import json
 
 from machine import Pin
 
 
 def CleanRequest(req):
-    sep = req.replace("\r\n"," ").replace("\\r\\n"," ").split(" ")
+    #wont work in <3.9 
+    #sep_linebreak = req.removeprefix("b'").removesuffix("'").split("\r\n")
+    sep_linebreak = req[:-1][2:].split("\r\n")
 
-    extras = []
-    last_extra = 0
-    for x in range(len(sep)):
-        if ":" in sep[x] and sep[x].find("://") == -1:
+    req_method = sep_linebreak[0].split(' ')[0]
+    req_route  = sep_linebreak[0].split(' ')[1].split('?')[0]
+    req_version  = sep_linebreak[0].split(' ')[2]
+    
+    headders = []
+    #loop though array and see if the string includes : and doesnt include :// or { and assume its a headder
+    for x in range(len(sep_linebreak)):
+        if ":" in sep_linebreak[x] and sep_linebreak[x].find("://") == -1 and sep_linebreak[x].find("{") == -1:
+            split_line = sep_linebreak[x].split(': ')
             try:
-                extras.append({sep[x].replace(":", ""): sep[x+1]})
-                last_extra = x+1
+                headders.append({split_line[0]: split_line[1]})
             except:
                 print()
-                
-    post_data = sep[last_extra+1:]
-    post_data = " ".join(post_data).replace(' ', '').replace("'","")
-    
+
+
+    post_data = {}
     try:
-        if "?" in sep[1]:
-            return {
-                "method": sep[0].replace("b'", ""),
-                "route": sep[1].split('?')[0],
-                "params": "?"+sep[1].split('?')[1],
-                "extras":extras,
-                "post_data": post_data}
-        else:
-            return {
-                "method": sep[0].replace("b'", ""),
-                "route": sep[1].split('?')[0],
-                "params": "",
-                "extras":extras,
-                "post_data":post_data}
+        post_data = json.loads(sep_linebreak[len(sep_linebreak)-1])
     except:
-        #hmmm
+        print()
+
+    if "?" in sep_linebreak[0].split(' ')[1]:
+        req_params  = "?"+sep_linebreak[0].split(' ')[1].split('?')[1]
         return {
-                "method": "GET",
-                "route": "/",
-                "params": "",
-                "extras":{},
-                "post_data":""}
+        "method": req_method,
+        "route": req_route,
+        "params": req_params,
+        "headders":headders,
+        "post_data": post_data}
+    else:
+        return {
+        "method": req_method,
+        "route": req_route,
+        "params": "",
+        "headders":headders,
+        "post_data": post_data}
+
 
 led = Pin("LED", Pin.OUT)
 led.value(0)
@@ -108,7 +112,7 @@ class WebServer:
                 
                 request = str(request)
                 clean_request = CleanRequest(request)
-                
+                print(str(request))
                 print(str(clean_request))
                 
                 def SendHTML(data):
@@ -128,14 +132,14 @@ class WebServer:
                     self.get_requests += 1
                     if self.get_callbacks is not None and clean_request['route'] in self.get_callbacks:
                         for callback in self.get_callbacks[clean_request['route']]:
-                            callback({}, {'send': SendHTML, 'json': SendJson})
+                            callback({"body": None}, {'send': SendHTML, 'json': SendJson})
                     
                 #handle post requests
                 elif clean_request['method'] == "POST":
                     self.post_requests += 1
                     if self.post_callbacks is not None and clean_request['route'] in self.post_callbacks:
                         for callback in self.post_callbacks[clean_request['route']]:
-                            callback({}, {'send': SendHTML, 'json': SendJson})
+                            callback({"body": json.loads(clean_request['post_data'])}, {'send': SendHTML, 'json': SendJson})
                 
                 
     
