@@ -2,7 +2,7 @@
 a simple wrapper for the socket library that lets you make a webserver with paths and post/get
 
 
-
+python packages to hard and a pain i will learn it some day for now
 make a folder called lib then a file called PicoWebServer.py and coppy the content of PicoWebServer.py into it
 
 
